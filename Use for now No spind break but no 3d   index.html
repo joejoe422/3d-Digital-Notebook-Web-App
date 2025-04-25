@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Two-Page Digital Notebook</title>
+<style>
+/* ----- Body and Container Styling ----- */
+body {
+    background-color: #333; /* Dark background */
+    color: #eee;           /* Default text color */
+    font-family: sans-serif;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center; /* Center notebook horizontally */
+    align-items: flex-start; /* Align pages at top of viewport */
+    height: 100vh;
+}
+/* Notebook container: flex layout for pages and spine */
+.notebook-container {
+    display: flex;
+    align-items: stretch;    /* Make pages and spine same height */
+    background-color: #444;  /* Dark container background */
+    padding: 20px;
+}
+
+/* ----- Page Styling ----- */
+.page {
+    background: #fdfdfd;      /* Off-white page color */
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 20px;
+    margin: 0 10px;
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+    width: 300px;
+    min-width: 200px;
+    color: #222;            /* Text color on page (dark) */
+}
+/* Adjust margins next to the spine for spacing */
+.page.left {
+    margin-right: 5px;
+}
+.page.right {
+    margin-left: 5px;
+}
+
+/* ----- Spine Styling ----- */
+.spine {
+    width: 20px;
+    background: #555;       /* Dark grey spine */
+    border-radius: 2px;
+    box-shadow: inset 0 0 5px rgba(0,0,0,0.5);
+    margin: 0 5px;
+}
+</style>
+</head>
+<body>
+<div class="notebook-container">
+    <!-- Flex container with left page, spine, and right page -->
+    <div class="page left" contenteditable="true">
+        <!-- Editable content on the left page -->
+        <p>Start typing on the left page...</p>
+    </div>
+    <div class="spine"></div> <!-- Center spine between pages -->
+    <div class="page right" contenteditable="true">
+        <!-- Editable content on the right page -->
+        <p>Start typing on the right page...</p>
+    </div>
+</div>
+
+<script>
+// Adjust the spine height to match the taller page
+function adjustSpineHeight() {
+    var leftPage = document.querySelector('.page.left');
+    var rightPage = document.querySelector('.page.right');
+    var spine    = document.querySelector('.spine');
+    // Measure the full content height of each page
+    var leftHeight  = leftPage.scrollHeight;
+    var rightHeight = rightPage.scrollHeight;
+    // Determine which page is taller
+    var maxHeight = Math.max(leftHeight, rightHeight);
+    // Set spine height to this taller value
+    spine.style.height = maxHeight + 'px';
+}
+
+// Add 'input' listeners to both pages (fires when typing)
+document.querySelectorAll('.page').forEach(function(page) {
+    page.addEventListener('input', adjustSpineHeight);
+});
+// Also adjust spine on window resize (in case layout changes)
+window.addEventListener('resize', adjustSpineHeight);
+// Perform initial spine adjustment on page load
+window.addEventListener('load', adjustSpineHeight);
+</script>
+</body>
+</html>
