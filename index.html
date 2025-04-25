@@ -1,265 +1,78 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Notebook</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <title>3D Digital Notebook</title>
   <style>
-    :root {
-      --bg: #1a1a1a;
-      --page-bg: #1c1c1c;
-      --text: #fffde7;
-      --title: #fff;
-      --border: #222;
-      --button: #444;
-      --button-hover: #666;
-      --spine-bg: linear-gradient(to bottom, #555, #222);
-      --grain: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8//8/AwAI/AL+okvC1wAAAABJRU5ErkJggg==');
-    }
-    body.light {
-      --bg: #fafafa;
-      --page-bg: #fff;
-      --text: #111;
-      --title: #333;
-      --border: #ccc;
-      --button: #ddd;
-      --button-hover: #bbb;
-      --spine-bg: linear-gradient(to bottom, #bbb, #888);
-    }
     body {
       margin: 0;
-      padding: 30px 20px 100px;
-      background-color: var(--bg);
-      font-family: 'Courier New', Courier, monospace;
-      color: var(--text);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
-      transition: background 0.3s, color 0.3s;
+      background: #f3f3f3;
+      font-family: sans-serif;
     }
-    .spread {
-      display: flex;
-      width: 90vw;
-      max-width: 1100px;
-      background-color: transparent;
-      margin-bottom: 30px;
-      border-radius: 8px;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-      transition: transform 0.3s ease;
-    }
-    .spread:hover {
-      transform: perspective(1000px) rotateX(1deg) rotateY(-1deg);
+    .notebook {
+      width: 90%;
+      margin: 50px auto;
+      perspective: 1500px;
     }
     .page {
-      flex: 1;
+      background: white;
       padding: 40px;
-      background-color: var(--page-bg);
-      white-space: pre-wrap;
+      min-height: 600px;
+      transform: rotateX(2deg) rotateY(1deg);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1);
       overflow-wrap: break-word;
-      font-size: 16px;
-      border-left: 1px solid var(--border);
-      line-height: 1.8;
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      background-image: var(--grain);
-      background-size: cover;
-      clip-path: polygon(0 0, 100% 0, 100% 95%, 0 100%);
     }
-    .page:first-child {
-      border-left: none;
-    }
-    .page::before {
-      content: "";
-      position: absolute;
-      top: 0;
-      left: 0;
-      height: 100%;
-      width: 100%;
-      background-image: repeating-linear-gradient(
-        to bottom,
-        transparent,
-        transparent 27px,
-        rgba(255,255,255,0.05) 27px,
-        rgba(255,255,255,0.05) 28px
-      );
-      pointer-events: none;
-      z-index: 0;
-    }
-    .content {
-      position: relative;
-      z-index: 1;
+    #paper-content {
+      white-space: pre-wrap;
       outline: none;
-      flex: 1;
     }
-    .title {
-      font-size: 24px;
-      font-weight: bold;
-      margin-bottom: 20px;
-      color: var(--title);
-    }
-    .spine {
-      width: 10px;
-      background: var(--spine-bg);
-      box-shadow: inset 0 0 10px rgba(0,0,0,0.6);
-    }
-    .controls {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
+    button.save {
       position: fixed;
       bottom: 20px;
-      background: var(--bg);
-      padding: 10px 20px;
-      border-radius: 12px;
-      box-shadow: 0 0 20px rgba(0,0,0,0.3);
-      z-index: 100;
-    }
-    button {
-      background-color: var(--button);
-      color: var(--text);
+      right: 20px;
+      z-index: 9999;
+      padding: 12px 20px;
+      font-size: 16px;
+      background: #4caf50;
+      color: white;
       border: none;
-      padding: 10px 20px;
-      font-family: 'Courier New', Courier, monospace;
-      font-size: 14px;
-      border-radius: 5px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
       cursor: pointer;
-      transition: background 0.2s;
     }
-    button:hover {
-      background-color: var(--button-hover);
+    button.save:hover {
+      background: #45a049;
     }
   </style>
 </head>
 <body>
-  <div class="spread" id="spread"></div>
-  <div class="controls">
-    <button onclick="prevPage()">⬅ Prev</button>
-    <button onclick="nextPage()">Next ➡</button>
-    <button onclick="savePages()">Save</button>
-    <button onclick="deletePages()">Delete</button>
-    <button onclick="downloadPages()">Download TXT</button>
-    <button onclick="exportToPDF()">Export PDF</button>
-    <button onclick="toggleTheme()">Toggle Theme 🌗</button>
+  <div class="notebook">
+    <div class="page" contenteditable="true" id="paper-content">
+      Start typing your massive text journal here...
+    </div>
   </div>
-  <script>
-    const pageTitles = ["Massive text", "Massive text", "Massive text", "Massive text", "Massive text", "Massive text"];
-    let currentPair = 0, db;
-    const request = indexedDB.open("NotebookDB", 1);
-    request.onupgradeneeded = e => {
-      db = e.target.result;
-      db.createObjectStore("pages", { keyPath: "id" });
-      db.createObjectStore("settings", { keyPath: "key" });
-    };
-    request.onsuccess = e => {
-      db = e.target.result;
-      loadPages();
-      loadTheme();
-    };
-    function renderPages() {
-      const spread = document.getElementById("spread");
-      spread.innerHTML = "";
-      const start = currentPair * 2;
-      for (let i = start; i < start + 2 && i < pageTitles.length; i++) {
-        const page = document.createElement("div");
-        page.className = "page";
-        page.innerHTML = `<div class="content" contenteditable="true" id="page${i + 1}"><div class="title">${pageTitles[i]}</div>Start writing here...</div>`;
-        spread.appendChild(page);
-        if (i % 2 === 0) spread.appendChild(Object.assign(document.createElement("div"), { className: "spine" }));
-      }
-    }
-    function savePages() {
-      const tx = db.transaction("pages", "readwrite");
-      const store = tx.objectStore("pages");
-      pageTitles.forEach((_, i) => {
-        const el = document.getElementById(`page${i + 1}`);
-        if (el) store.put({ id: `page${i + 1}`, html: el.innerHTML });
-      });
-      alert("Saved!");
-    }
-    function loadPages() {
-      renderPages();
-      const tx = db.transaction("pages", "readonly");
-      const store = tx.objectStore("pages");
-      pageTitles.forEach((_, i) => {
-        const req = store.get(`page${i + 1}`);
-        req.onsuccess = e => {
-          const el = document.getElementById(`page${i + 1}`);
-          if (e.target.result && el) el.innerHTML = e.target.result.html;
-        };
-      });
-    }
-    function deletePages() {
-      const tx = db.transaction("pages", "readwrite");
-      const store = tx.objectStore("pages");
-      pageTitles.forEach((_, i) => store.delete(`page${i + 1}`));
-      loadPages();
-    }
-    function downloadPages() {
-      let text = "";
-      pageTitles.forEach((_, i) => {
-        const el = document.getElementById(`page${i + 1}`);
-        if (el) {
-          const title = el.querySelector(".title")?.innerText || "";
-          const content = el.innerText.replace(title, '').trim();
-          text += `${title}
 
-${content}
+  <button class="save" onclick="saveNote()">💾 Save to Supabase</button>
 
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
-`;
-        }
-      });
-      const blob = new Blob([text], { type: 'text/plain' });
-      const a = document.createElement('a');
-      a.download = 'journal.txt';
-      a.href = URL.createObjectURL(blob);
-      a.click();
-    }
-    async function exportToPDF() {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-      pageTitles.forEach((_, i) => {
-        const el = document.getElementById(`page${i + 1}`);
-        if (el) {
-          const title = el.querySelector(".title")?.innerText || "";
-          const content = el.innerText.replace(title, '').trim();
-          if (i > 0) doc.addPage();
-          doc.setFont("Courier", "normal");
-          doc.setFontSize(12);
-          doc.text(`${title}
+    const supabaseUrl = 'https://fsosfgsmzdubqgjcpjug.supabase.co'
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZzb3NmZ3NtemR1YnFnamNwanVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU0NDQzMjEsImV4cCI6MjA2MTAyMDMyMX0.OFC9FFOkOso8Wa69hgYe9rDJKgii_FCM1RJN1oNHbqM'
+    const supabase = createClient(supabaseUrl, supabaseKey)
 
-${content}`, 10, 20, { maxWidth: 180 });
-        }
-      });
-      doc.save("journal.pdf");
-    }
-    function toggleTheme() {
-      const isLight = document.body.classList.toggle("light");
-      const tx = db.transaction("settings", "readwrite");
-      tx.objectStore("settings").put({ key: "theme", value: isLight ? "light" : "dark" });
-    }
-    function loadTheme() {
-      const tx = db.transaction("settings", "readonly");
-      const store = tx.objectStore("settings");
-      const req = store.get("theme");
-      req.onsuccess = e => {
-        if (e.target.result?.value === "light") document.body.classList.add("light");
-      };
-    }
-    function nextPage() {
-      if ((currentPair + 1) * 2 < pageTitles.length) {
-        currentPair++;
-        loadPages();
-      }
-    }
-    function prevPage() {
-      if (currentPair > 0) {
-        currentPair--;
-        loadPages();
+    async function saveNote() {
+      const content = document.getElementById('paper-content').innerText
+
+      const { data, error } = await supabase
+        .from('2 notes') // ← CHANGE THIS to your actual table name!
+        .insert([{ content: content }])
+
+      if (error) {
+        alert('❌ Error saving: ' + error.message)
+      } else {
+        alert('✅ Note saved to Supabase!')
       }
     }
   </script>
