@@ -125,8 +125,32 @@ window.addEventListener('load', adjustSpineHeight);
     }
   }
 
-  // Attach button click listener
+  // Load most recent saved note on page load
+  async function loadLatestNote() {
+    const { data, error } = await supabase
+      .from('2 notes')
+      .select('*')
+      .order('id', { ascending: false })
+      .limit(1)
+
+    if (error) {
+      console.error('❌ Load error:', error)
+      return
+    }
+
+    if (data.length > 0) {
+      const note = data[0]
+      document.getElementById('leftPage').innerText = note.left_page || ''
+      document.getElementById('rightPage').innerText = note.right_page || ''
+      console.log('✅ Loaded saved note')
+    }
+  }
+
+  // Hook up button
   document.getElementById('saveBtn').addEventListener('click', saveNote)
+
+  // Load on startup
+  loadLatestNote()
 </script>
 </body>
 </html>
