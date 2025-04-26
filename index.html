@@ -1,143 +1,141 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Two-Page Digital Notebook</title>
-<style>
-body {
-  background-color: #333;
-  color: #eee;
-  font-family: sans-serif;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  height: 100vh;
-}
-.notebook-container {
-  display: flex;
-  align-items: stretch;
-  background-color: #444;
-  padding: 20px;
-}
-.page {
-  background: #fdfdfd;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  padding: 20px;
-  margin: 0 10px;
-  box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
-  width: 300px;
-  min-width: 200px;
-  color: #222;
-}
-.page.left {
-  margin-right: 5px;
-}
-.page.right {
-  margin-left: 5px;
-}
-.spine {
-  width: 20px;
-  background: #555;
-  border-radius: 2px;
-  box-shadow: inset 0 0 5px rgba(0,0,0,0.5);
-  margin: 0 5px;
-}
-button.save {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  z-index: 9999;
-  padding: 10px 20px;
-  background: #4caf50;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 16px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-  cursor: pointer;
-}
-button.save:hover {
-  background: #45a049;
-}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Two-Page Digital Notebook</title>
+  <style>
+    body { background-color: #333; color: #eee; font-family: sans-serif; margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+    h1, h2 { margin: 20px 0; }
+    .notebook-container { display: flex; align-items: stretch; background-color: #444; padding: 20px; border-radius: 8px; }
+    .page { background: #fdfdfd; border: 1px solid #ccc; border-radius: 4px; padding: 20px; margin: 0 10px; box-shadow: 2px 2px 5px rgba(0,0,0,0.3); width: 320px; height: 400px; color: #222; overflow-y: auto; }
+    .spine { width: 20px; background: #555; border-radius: 2px; box-shadow: inset 0 0 5px rgba(0,0,0,0.5); margin: 0 5px; }
+    #saveBtn { margin: 20px; padding: 10px 20px; background: #4caf50; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
+    #saveBtn:hover { background: #45a049; }
+    #notesContainer { width: 90%; max-width: 700px; margin: 10px auto 30px; }
+    .note-item { background: #fdfdfd; margin: 10px 0; padding: 12px; border-radius: 4px; color: #222; box-shadow: 1px 1px 3px rgba(0,0,0,0.2); }
+    .note-item > div { margin-bottom: 8px; }
+    .note-actions { text-align: right; }
+    .note-actions button { margin-left: 8px; padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; }
+    .btn-edit { background: #2196f3; color: white; }
+    .btn-delete { background: #e53935; color: white; }
+  </style>
 </head>
 <body>
-<div class="notebook-container">
-  <div class="page left" contenteditable="true" id="leftPage"></div>
-  <div class="spine"></div>
-  <div class="page right" contenteditable="true" id="rightPage"></div>
-</div>
+  <h1>📒 Two‑Page Digital Notebook</h1>
+  <div class="notebook-container">
+    <div class="page" contenteditable="true" id="leftPage" placeholder="Left page"></div>
+    <div class="spine" id="spine"></div>
+    <div class="page" contenteditable="true" id="rightPage" placeholder="Right page"></div>
+  </div>
+  <button id="saveBtn">💾 Save Note</button>
+  <h2>📚 Saved Notes</h2>
+  <div id="notesContainer"></div>
 
-<button class="save" id="saveBtn">💾 Save to Supabase</button>
+  <!-- Supabase JS -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    // Initialize Supabase client
+    const supabase = supabase || window.supabase;
+    const supabaseUrl = 'https://pbclnujukutrpmirljjk.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBiY2xudWp1a3V0cnBtaXJsamprIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU2MTE3NzIsImV4cCI6MjA2MTE4Nzc3Mn0.ZLaVbsKFdfYv2vZFEyrURjSILE3F890Skmtd3HmB-BA';
+    const client = supabase.createClient(supabaseUrl, supabaseKey);
 
-<script>
-function adjustSpineHeight() {
-  var leftPage = document.querySelector('.page.left');
-  var rightPage = document.querySelector('.page.right');
-  var spine = document.querySelector('.spine');
-  var leftHeight = leftPage.scrollHeight;
-  var rightHeight = rightPage.scrollHeight;
-  var maxHeight = Math.max(leftHeight, rightHeight);
-  spine.style.height = maxHeight + 'px';
-}
-document.querySelectorAll('.page').forEach(function (page) {
-  page.addEventListener('input', adjustSpineHeight);
-});
-window.addEventListener('resize', adjustSpineHeight);
-window.addEventListener('load', adjustSpineHeight);
-</script>
+    // DOM references
+    const leftPage  = document.getElementById('leftPage');
+    const rightPage = document.getElementById('rightPage');
+    const saveBtn   = document.getElementById('saveBtn');
+    const notesDiv  = document.getElementById('notesContainer');
 
-<script type="module">
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+    let editingId = null;
 
-const supabaseUrl = 'https://pbclnujukutrpmirljjk.supabase.co'
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBiY2xudWp1a3V0cnBtaXJsamprIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU2MTE3NzIsImV4cCI6MjA2MTE4Nzc3Mn0.ZLaVbsKFdfYv2vZFEyrURjSILE3F890Skmtd3HmB-BA'
+    // Adjust spine height to match taller page
+    function adjustSpine() {
+      const maxH = Math.max(leftPage.scrollHeight, rightPage.scrollHeight);
+      document.getElementById('spine').style.height = maxH + 'px';
+    }
+    window.addEventListener('input', adjustSpine);
+    window.addEventListener('load', adjustSpine);
+    window.addEventListener('resize', adjustSpine);
 
-const supabase = createClient(supabaseUrl, supabaseKey)
+    // Save or update note
+    async function saveNote() {
+      const left  = leftPage.innerText.trim();
+      const right = rightPage.innerText.trim();
+      if (!left && !right) return alert('Write on at least one page!');
 
-async function saveNote() {
-  const leftContent = document.getElementById('leftPage').innerText
-  const rightContent = document.getElementById('rightPage').innerText
+      if (editingId) {
+        const { error } = await client
+          .from('2 notes')
+          .update({ left_page: left, right_page: right })
+          .eq('id', editingId);
+        if (error) return alert('Update error: ' + error.message);
+        editingId = null;
+        saveBtn.textContent = '💾 Save Note';
+      } else {
+        const { error } = await client
+          .from('2 notes')
+          .insert([{ left_page: left, right_page: right }]);
+        if (error) return alert('Save error: ' + error.message);
+      }
 
-  const { data, error } = await supabase
-    .from('2 notes')
-    .insert([{ left_page: leftContent, right_page: rightContent }])
+      leftPage.innerText = '';
+      rightPage.innerText = '';
+      await loadNotes();
+    }
 
-  if (error) {
-    console.error('❌ Error saving:', error)
-    alert('❌ Error saving: ' + error.message)
-  } else {
-    alert('✅ Pages saved to Supabase!')
-    console.log('✅ Saved:', data)
-  }
-}
+    // Load all notes
+    async function loadNotes() {
+      const { data, error } = await client
+        .from('2 notes')
+        .select('*')
+        .order('id', { ascending: false });
+      if (error) return console.error('Load error:', error);
 
-async function loadLatestNote() {
-  const { data, error } = await supabase
-    .from('2 notes')
-    .select('*')
-    .order('id', { ascending: false })
-    .limit(1)
+      notesDiv.innerHTML = '';
+      data.forEach(n => {
+        const item = document.createElement('div');
+        item.className = 'note-item';
+        item.innerHTML = `
+          <div><strong>#${n.id}</strong></div>
+          <div>${n.left_page.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+          <div>${n.right_page.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+          <div class="note-actions">
+            <button class="btn-edit" onclick="editNote(${n.id}, \`${n.left_page}\`, \`${n.right_page}\`)">Edit</button>
+            <button class="btn-delete" onclick="deleteNote(${n.id})">Delete</button>
+          </div>`;
+        notesDiv.appendChild(item);
+      });
+      adjustSpine();
+    }
 
-  if (error) {
-    console.error('❌ Load error:', error)
-    return
-  }
+    // Edit an existing note
+    function editNote(id, left, right) {
+      editingId = id;
+      leftPage.innerText = left;
+      rightPage.innerText = right;
+      saveBtn.textContent = '✏️ Update Note';
+      adjustSpine();
+    }
 
-  if (data.length > 0) {
-    const note = data[0]
-    document.getElementById('leftPage').innerText = note.left_page || ''
-    document.getElementById('rightPage').innerText = note.right_page || ''
-    console.log('✅ Loaded saved note')
-    adjustSpineHeight()
-  }
-}
+    // Delete a note
+    async function deleteNote(id) {
+      if (!confirm('Delete note #' + id + '?')) return;
+      const { error } = await client
+        .from('2 notes')
+        .delete()
+        .eq('id', id);
+      if (error) return alert('Delete error: ' + error.message);
+      await loadNotes();
+    }
 
-document.getElementById('saveBtn').addEventListener('click', saveNote)
-loadLatestNote()
-</script>
+    // Bind events
+    saveBtn.addEventListener('click', saveNote);
+    window.editNote = editNote;
+    window.deleteNote = deleteNote;
+
+    // Initial load
+    loadNotes();
+  </script>
 </body>
 </html>
