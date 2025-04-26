@@ -67,20 +67,25 @@
     margin-bottom: 10px;
     padding: 10px;
     border-radius: 4px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
     color: #222;
+    display: flex;
+    flex-direction: column;
   }
-  .note-item button {
-    margin-left: 5px;
-    padding: 5px 10px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
+  .note-item > div:first-child {
+    margin-bottom: 8px;
   }
-  .btn-load { background: #2196f3; color: white; }
-  .btn-delete { background: #e53935; color: white; }
+  .note-preview {
+    max-height: 60px;
+    overflow-y: auto;
+    margin: 4px 0;
+    white-space: pre-wrap;
+  }
+  .note-actions {
+    display: flex;
+    justify-content: flex-end;
+  }
+  .btn-load { background: #2196f3; color: white; border: none; border-radius: 4px; padding: 5px 10px; cursor: pointer; }
+  .btn-delete { background: #e53935; color: white; border: none; border-radius: 4px; padding: 5px 10px; cursor: pointer; margin-left: 5px; }
 </style>
 </head>
 <body>
@@ -95,7 +100,6 @@
 
   <div id="notesContainer">
     <h2 style="color: white;">📚 Saved Notes</h2>
-    <!-- Notes will be injected here -->
   </div>
 
 <script>
@@ -118,7 +122,6 @@ const supabaseUrl = 'https://pbclnujukutrpmirljjk.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBiY2xudWp1a3V0cnBtaXJsamprIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU2MTE3NzIsImV4cCI6MjA2MTE4Nzc3Mn0.ZLaVbsKFdfYv2vZFEyrURjSILE3F890Skmtd3HmB-BA';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Save or update a note
 async function saveNote() {
   const leftContent = document.getElementById('leftPage').innerText;
   const rightContent = document.getElementById('rightPage').innerText;
@@ -126,8 +129,7 @@ async function saveNote() {
     alert('Please enter text on at least one page.');
     return;
   }
-
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from('2 notes')
     .insert([{ left_page: leftContent, right_page: rightContent }]);
 
@@ -139,65 +141,58 @@ async function saveNote() {
     loadNotes();
   }
 }
-
 document.getElementById('saveBtn').addEventListener('click', saveNote);
 
-// Load all saved notes
 async function loadNotes() {
   const { data, error } = await supabase
     .from('2 notes')
     .select('*')
     .order('id', { ascending: false });
-
   if (error) {
     console.error('Error loading notes:', error);
     return;
   }
-
   const container = document.getElementById('notesContainer');
-  // Remove old items (except the heading)
   container.querySelectorAll('.note-item').forEach(el => el.remove());
-
   data.forEach(note => {
     const div = document.createElement('div');
     div.className = 'note-item';
     div.innerHTML = `
-      <span>Note #${note.id}</span>
       <div>
-        <button class=\"btn-load\" onclick=\"loadNote(${note.id})\">Load</button>
-        <button class=\"btn-delete\" onclick=\"deleteNote(${note.id})\">Delete</button>
+        <strong>Note #${note.id}</strong>
+        <p class="note-preview">${note.left_page ? note.left_page.replace(/\n/g, '<br>') : ''}</p>
+        <p class="note-preview">${note.right_page ? note.right_page.replace(/\n/g, '<br>') : ''}</p>
+      </div>
+      <div class="note-actions">
+        <button class="btn-load" onclick="loadNote(${note.id})">Load</button>
+        <button class="btn-delete" onclick="deleteNote(${note.id})">Delete</button>
       </div>
     `;
     container.appendChild(div);
   });
 }
 
-// Load a specific note into the pages
 async function loadNote(id) {
   const { data, error } = await supabase
     .from('2 notes')
     .select('*')
     .eq('id', id)
     .single();
-
   if (error) {
     console.error('Error loading note:', error);
     return;
   }
-
   document.getElementById('leftPage').innerText = data.left_page || '';
   document.getElementById('rightPage').innerText = data.right_page || '';
   adjustSpineHeight();
 }
 
-// Delete a note
 async function deleteNote(id) {
   if (!confirm('Delete note #' + id + '?')) return;
   const { error } = await supabase
     .from('2 notes')
     .delete()
     .eq('id', id);
-
   if (error) {
     alert('Error deleting: ' + error.message);
   } else {
@@ -205,7 +200,6 @@ async function deleteNote(id) {
   }
 }
 
-// Initial load of notes
 loadNotes();
 </script>
 </body>
