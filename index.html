@@ -1,251 +1,143 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Massive Text Storage</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <style>
-    body {
-      background: #121212;
-      font-family: 'Courier New', monospace;
-      padding: 2rem;
-      display: flex;
-      justify-content: center;
-    }
-
-    .notebook {
-      position: relative;
-      background: #1f1f1f;
-      border-radius: 10px;
-      padding: 2rem 2rem 2rem 3rem;
-      max-width: 800px;
-      width: 100%;
-      box-shadow: 0 0 15px rgba(0,0,0,0.6);
-      color: white;
-    }
-
-    .spirals {
-      position: absolute;
-      left: 10px;
-      top: 20px;
-      bottom: 20px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
-
-    .spiral-hole {
-      width: 12px;
-      height: 12px;
-      background: #444;
-      border: 2px solid #222;
-      border-radius: 50%;
-      margin: 6px 0;
-    }
-
-    h1, h2 {
-      text-align: center;
-      font-family: Georgia, serif;
-      color: #ffffff;
-    }
-
-    input, textarea {
-      width: 100%;
-      box-sizing: border-box;
-      padding: 12px;
-      font-size: 16px;
-      font-family: 'Courier New', monospace;
-      border: 1px solid #444;
-      border-radius: 6px;
-      color: white;
-      background-color: #2a2a2a;
-      background-image: repeating-linear-gradient(
-        to bottom,
-        #2a2a2a 0px,
-        #2a2a2a 24px,
-        #333 25px
-      );
-      background-attachment: local;
-      line-height: 25px;
-    }
-
-    textarea {
-      height: 250px;
-      resize: vertical;
-    }
-
-    button {
-      padding: 10px 20px;
-      font-size: 16px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      margin-right: 10px;
-      margin-top: 10px;
-    }
-
-    .edit-button {
-      background-color: #2196f3;
-      color: white;
-    }
-
-    .delete-button {
-      background-color: #e53935;
-      color: white;
-    }
-
-    #saveButton {
-      background-color: #4caf50;
-      color: white;
-    }
-
-    .note {
-      background-image: repeating-linear-gradient(
-        to bottom,
-        #2a2a2a 0px,
-        #2a2a2a 24px,
-        #333 25px
-      );
-      background-attachment: local;
-      padding: 1rem;
-      margin-top: 1rem;
-      border-left: 4px solid #4caf50;
-      border-radius: 6px;
-      line-height: 25px;
-      white-space: pre-wrap;
-      word-wrap: break-word;
-      font-family: 'Courier New', monospace;
-      color: white;
-    }
-
-    .note-title {
-      font-weight: bold;
-      margin-bottom: 0.5rem;
-      display: block;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>Two-Page Digital Notebook</title>
+<style>
+body {
+  background-color: #333;
+  color: #eee;
+  font-family: sans-serif;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  height: 100vh;
+}
+.notebook-container {
+  display: flex;
+  align-items: stretch;
+  background-color: #444;
+  padding: 20px;
+}
+.page {
+  background: #fdfdfd;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 20px;
+  margin: 0 10px;
+  box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+  width: 300px;
+  min-width: 200px;
+  color: #222;
+}
+.page.left {
+  margin-right: 5px;
+}
+.page.right {
+  margin-left: 5px;
+}
+.spine {
+  width: 20px;
+  background: #555;
+  border-radius: 2px;
+  box-shadow: inset 0 0 5px rgba(0,0,0,0.5);
+  margin: 0 5px;
+}
+button.save {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 9999;
+  padding: 10px 20px;
+  background: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  cursor: pointer;
+}
+button.save:hover {
+  background: #45a049;
+}
+</style>
 </head>
 <body>
-  <div class="notebook">
-    <div class="spirals">
-      <div class="spiral-hole"></div>
-      <div class="spiral-hole"></div>
-      <div class="spiral-hole"></div>
-      <div class="spiral-hole"></div>
-      <div class="spiral-hole"></div>
-      <div class="spiral-hole"></div>
-      <div class="spiral-hole"></div>
-    </div>
-    <h1>🖤 Massive Text Storage 🖤</h1>
-    <input type="text" id="title" placeholder="Title (optional)" />
-    <textarea id="text" placeholder="Write here and your text will align with the lines..."></textarea>
-    <button id="saveButton" onclick="saveNote()">Save Note</button>
+<div class="notebook-container">
+  <div class="page left" contenteditable="true" id="leftPage"></div>
+  <div class="spine"></div>
+  <div class="page right" contenteditable="true" id="rightPage"></div>
+</div>
 
-    <h2>📚 Your Notes</h2>
-    <div id="notes"></div>
-  </div>
-  <script>
-    const supabase = window.supabase.createClient(
-      "https://fsosfgsmzdubqgjcpjug.supabase.co",
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZzb3NmZ3NtemR1YnFnamNwanVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU0NDQzMjEsImV4cCI6MjA2MTAyMDMyMX0.OFC9FFOkOso8Wa69hgYe9rDJKgii_FCM1RJN1oNHbqM"
-    );
+<button class="save" id="saveBtn">💾 Save to Supabase</button>
 
-    let editingId = null;
+<script>
+function adjustSpineHeight() {
+  var leftPage = document.querySelector('.page.left');
+  var rightPage = document.querySelector('.page.right');
+  var spine = document.querySelector('.spine');
+  var leftHeight = leftPage.scrollHeight;
+  var rightHeight = rightPage.scrollHeight;
+  var maxHeight = Math.max(leftHeight, rightHeight);
+  spine.style.height = maxHeight + 'px';
+}
+document.querySelectorAll('.page').forEach(function (page) {
+  page.addEventListener('input', adjustSpineHeight);
+});
+window.addEventListener('resize', adjustSpineHeight);
+window.addEventListener('load', adjustSpineHeight);
+</script>
 
-    async function saveNote() {
-      const title = document.getElementById("title").value;
-      const text = document.getElementById("text").value;
-      const button = document.getElementById("saveButton");
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
-      if (!text.trim()) {
-        alert("Please enter some text!");
-        return;
-      }
+const supabaseUrl = 'https://pbclnujukutrpmirljjk.supabase.co'
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBiY2xudWp1a3V0cnBtaXJsamprIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU2MTE3NzIsImV4cCI6MjA2MTE4Nzc3Mn0.ZLaVbsKFdfYv2vZFEyrURjSILE3F890Skmtd3HmB-BA'
 
-      if (editingId) {
-        const { error } = await supabase
-          .from("notes")
-          .update({ title: title || "Untitled", text })
-          .eq("id", editingId);
+const supabase = createClient(supabaseUrl, supabaseKey)
 
-        if (error) {
-          alert("Error updating note: " + error.message);
-        } else {
-          editingId = null;
-          button.textContent = "Save Note";
-          clearInputs();
-          loadNotes();
-        }
-      } else {
-        const { error } = await supabase
-          .from("notes")
-          .insert([{ title: title || "Untitled", text }]);
+async function saveNote() {
+  const leftContent = document.getElementById('leftPage').innerText
+  const rightContent = document.getElementById('rightPage').innerText
 
-        if (error) {
-          alert("Error saving note: " + error.message);
-        } else {
-          clearInputs();
-          loadNotes();
-        }
-      }
-    }
+  const { data, error } = await supabase
+    .from('2 notes')
+    .insert([{ left_page: leftContent, right_page: rightContent }])
 
-    function clearInputs() {
-      document.getElementById("title").value = "";
-      document.getElementById("text").value = "";
-      document.getElementById("saveButton").textContent = "Save Note";
-    }
-    async function deleteNote(id) {
-      const confirmDelete = confirm("Are you sure you want to delete this note?");
-      if (!confirmDelete) return;
+  if (error) {
+    console.error('❌ Error saving:', error)
+    alert('❌ Error saving: ' + error.message)
+  } else {
+    alert('✅ Pages saved to Supabase!')
+    console.log('✅ Saved:', data)
+  }
+}
 
-      const { error } = await supabase
-        .from("notes")
-        .delete()
-        .eq("id", id);
+async function loadLatestNote() {
+  const { data, error } = await supabase
+    .from('2 notes')
+    .select('*')
+    .order('id', { ascending: false })
+    .limit(1)
 
-      if (error) {
-        alert("Error deleting note: " + error.message);
-      } else {
-        loadNotes();
-      }
-    }
+  if (error) {
+    console.error('❌ Load error:', error)
+    return
+  }
 
-    function editNote(id, title, text) {
-      editingId = id;
-      document.getElementById("title").value = title;
-      document.getElementById("text").value = text;
-      document.getElementById("saveButton").textContent = "Update Note";
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+  if (data.length > 0) {
+    const note = data[0]
+    document.getElementById('leftPage').innerText = note.left_page || ''
+    document.getElementById('rightPage').innerText = note.right_page || ''
+    console.log('✅ Loaded saved note')
+    adjustSpineHeight()
+  }
+}
 
-    async function loadNotes() {
-      const { data, error } = await supabase
-        .from("notes")
-        .select("*")
-        .order("id", { ascending: false });
-
-      const notesContainer = document.getElementById("notes");
-      notesContainer.innerHTML = "";
-
-      if (data && data.length > 0) {
-        data.forEach(note => {
-          const div = document.createElement("div");
-          div.className = "note";
-          div.innerHTML = `
-            <span class="note-title">${note.title}</span>
-            ${note.text.replace(/</g, '&lt;').replace(/>/g, '&gt;')}
-            <br/>
-            <button class="edit-button" onclick="editNote('${note.id}', \`${note.title.replace(/`/g, '\\`')}\`, \`${note.text.replace(/`/g, '\\`')}\`)">Edit</button>
-            <button class="delete-button" onclick="deleteNote('${note.id}')">Delete</button>
-          `;
-          notesContainer.appendChild(div);
-        });
-      }
-    }
-
-    loadNotes();
-  </script>
+document.getElementById('saveBtn').addEventListener('click', saveNote)
+loadLatestNote()
+</script>
 </body>
 </html>
