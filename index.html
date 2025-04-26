@@ -198,7 +198,7 @@
       // Load content from Supabase
       for (let i = start; i < start + 2 && i < pageTitles.length; i++) {
         const { data, error } = await supabase
-          .from("notes")
+          .from("2 notes")
           .select("content")
           .eq("id", `page${i + 1}`)
           .single();
@@ -217,7 +217,7 @@
         const el = document.getElementById(`page${i + 1}`);
         if (el) {
           const { error } = await supabase
-            .from("notes")
+            .from("2 notes")
             .upsert({ id: `page${i + 1}`, content: el.innerHTML });
           if (error) {
             console.error("Save error:", error);
@@ -232,7 +232,7 @@
     async function deletePages() {
       for (let i = 0; i < pageTitles.length; i++) {
         const { error } = await supabase
-          .from("notes")
+          .from("2 notes")
           .delete()
           .eq("id", `page${i + 1}`);
         if (error) {
