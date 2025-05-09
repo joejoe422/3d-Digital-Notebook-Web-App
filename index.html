@@ -1,249 +1,312 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Phaser Lane Game (GitHub Pages)</title>
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            background: #f0f0f0;
-        }
-    </style>
-    <!-- Use a CDN for Phaser.js -->
-    <script src="https://cdn.jsdelivr.net/npm/phaser@3.85.0/dist/phaser.min.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Notebook</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --bg: #1a1a1a;
+      --page-bg: #1c1c1c;
+      --text: #fffde7;
+      --title: #fff;
+      --border: #222;
+      --button: #444;
+      --button-hover: #666;
+      --spine-bg: linear-gradient(to bottom, #555, #222);
+    }
+
+    body.light {
+      --bg: #fafafa;
+      --page-bg: #fff;
+      --text: #111;
+      --title: #333;
+      --border: #ccc;
+      --button: #ddd;
+      --button-hover: #bbb;
+      --spine-bg: linear-gradient(to bottom, #bbb, #888);
+    }
+
+    body {
+      margin: 0;
+      padding: 30px 20px 100px;
+      background-color: var(--bg);
+      font-family: 'Courier New', Courier, monospace;
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    .spread {
+      display: flex;
+      width: 90vw;
+      max-width: 1100px;
+      background-color: transparent;
+      margin-bottom: 30px;
+      border-radius: 8px;
+      transform: skewX(-0.5deg);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+      position: relative;
+    }
+
+    .page {
+      width: calc(50% - 5px);
+      padding: 40px;
+      background-color: var(--page-bg);
+      white-space: pre-wrap;
+      overflow-wrap: break-word;
+      font-size: 16px;
+      border-left: 1px solid var(--border);
+      line-height: 1.8;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      box-shadow: inset 10px 0 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .page:first-child {
+      border-left: none;
+      box-shadow: inset -10px 0 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .page::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 100%;
+      background-image: repeating-linear-gradient(
+        to bottom,
+        transparent,
+        transparent 27px,
+        rgba(255,255,255,0.05) 27px,
+        rgba(255,255,255,0.05) 28px
+      );
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .content {
+      position: relative;
+      z-index: 1;
+      outline: none;
+      flex: 1;
+      width: 100%;
+      overflow-wrap: break-word;
+      box-sizing: border-box; /* Include padding in width */
+      padding-right: 10px; /* Prevent text from reaching spine */
+    }
+
+    .title {
+      font-size: 24px;
+      font-weight: bold;
+      margin-bottom: 20px;
+      color: var(--title);
+    }
+
+    .spine {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 10px;
+      height: 100%;
+      background: var(--spine-bg);
+      box-shadow: inset 0 0 10px rgba(0,0,0,0.6);
+      z-index: 2;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      position: fixed;
+      bottom: 20px;
+      background: var(--bg);
+      padding: 10px 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.3);
+      z-index: 100;
+    }
+
+    button {
+      background-color: var(--button);
+      color: var(--text);
+      border: none;
+      padding: 10px 20px;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 14px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background-color: var(--button-hover);
+    }
+  </style>
 </head>
 <body>
-    <script>
-        const config = {
-            type: Phaser.AUTO,
-            width: 800,
-            height: 600,
-            scene: {
-                preload: preload,
-                create: create,
-                update: update
-            },
-            physics: {
-                default: 'arcade',
-                arcade: {
-                    gravity: { y: 0 },
-                    debug: false
-                }
-            }
-        };
+  <div class="spread" id="spread">
+    <!-- Pages will be injected here -->
+  </div>
 
-        const game = new Phaser.Game(config);
+  <div class="controls">
+    <button onclick="prevPage()">⬅ Prev</button>
+    <button onclick="nextPage()">Next ➡</button>
+    <button onclick="savePages()">Save</button>
+    <button onclick="deletePages()">Delete</button>
+    <button onclick="downloadPages()">Download TXT</button>
+    <button onclick="exportToPDF()">Export PDF</button>
+    <button onclick="toggleTheme()">Toggle Theme 🌗</button>
+  </div>
 
-        let player, bots, orbs, obstacles, trail, timerText, cursors;
-        let gameTime = 0;
-        let gameOver = false;
-        const laneTopWidth = 700;
-        const laneBottomWidth = 150;
-        const laneTopX = (config.width - laneTopWidth) / 2;
-        const laneBottomX = (config.width - laneBottomWidth) / 2;
-        const scrollSpeed = 3;
+  <script>
+    const supabase = window.supabase.createClient(
+      "https://pbclnujukutrpmirljjk.supabase.co",
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBiY2xudWp1a3V0cnBtaXJsamprIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU2MTE3NzIsImV4cCI6MjA2MTE4Nzc3Mn0.ZLaVbsKFdfYv2vZFEyrURjSILE3F890Skmtd3HmB-BA"
+    );
 
-        function preload() {
-            // No external assets to avoid CORS issues
-            // In a real project, you'd host assets in your repository
+    const pageTitles = ["Massive text", "Massive text", "Massive text", "Massive text", "Massive text", "Massive text"];
+    let currentPair = 0;
+
+    async function renderPages() {
+      const spread = document.getElementById("spread");
+      spread.innerHTML = "";
+      const start = currentPair * 2;
+
+      // Add spine first
+      const spine = document.createElement("div");
+      spine.className = "spine";
+      spread.appendChild(spine);
+
+      // Add pages
+      for (let i = start; i < start + 2 && i < pageTitles.length; i++) {
+        const page = document.createElement("div");
+        page.className = "page";
+        page.innerHTML = `
+          <div class="content" contenteditable="true" id="page${i + 1}">
+            <div class="title">${pageTitles[i]}</div>
+            Start writing here...
+          </div>`;
+        spread.appendChild(page);
+      }
+
+      // Load content from Supabase
+      for (let i = start; i < start + 2 && i < pageTitles.length; i++) {
+        const { data, error } = await supabase
+          .from("notes")
+          .select("text")
+          .eq("id", `page${i + 1}`)
+          .single();
+        if (error && error.code !== "PGRST116") { // Ignore "no rows found" error
+          console.error("Load error:", error);
         }
-
-        function create() {
-            // Background
-            this.cameras.main.setBackgroundColor('#0a0');
-
-            // Draw lane (perspective effect)
-            const laneGraphics = this.add.graphics();
-            laneGraphics.fillStyle(0x555555, 1);
-            laneGraphics.beginPath();
-            laneGraphics.moveTo(laneTopX, 0);
-            laneGraphics.lineTo(laneTopX + laneTopWidth, 0);
-            laneGraphics.lineTo(laneBottomX + laneBottomWidth, config.height);
-            laneGraphics.lineTo(laneBottomX, config.height);
-            laneGraphics.closePath();
-            laneGraphics.fillPath();
-
-            // Tiled pattern
-            const tileSize = 20;
-            for (let y = 0; y < config.height; y += tileSize) {
-                const laneWidthAtY = laneTopWidth + (laneBottomWidth - laneTopWidth) * (y / config.height);
-                const laneLeftAtY = (config.width - laneWidthAtY) / 2;
-                for (let x = laneLeftAtY; x < laneLeftAtY + laneWidthAtY; x += tileSize) {
-                    laneGraphics.lineStyle(1, 0x777777, 1);
-                    laneGraphics.strokeRect(x, y, tileSize, tileSize);
-                }
-            }
-
-            // Dashed line
-            const dashedLine = this.add.graphics();
-            dashedLine.lineStyle(5, 0xffffff, 1);
-            dashedLine.setLineDash([10, 15]);
-            dashedLine.beginPath();
-            dashedLine.moveTo(config.width / 2, 0);
-            dashedLine.lineTo(config.width / 2, config.height);
-            dashedLine.strokePath();
-
-            // Player (using a rectangle instead of an image)
-            player = this.physics.add.rectangle(config.width / 2, 500, 30, 50, 0x0000ff);
-            player.setData('score', 0);
-
-            // Bots
-            bots = this.physics.add.group();
-            bots.create(config.width / 2 - 150, 400, null).setSize(30, 50).setDisplaySize(30, 50).setData('score', 1000).fillStyle(0xff8c00, 1).fillRectShape();
-            bots.create(config.width / 2 + 150, 300, null).setSize(30, 50).setDisplaySize(30, 50).setData('score', 856).fillStyle(0xff8c00, 1).fillRectShape();
-
-            // Orbs
-            orbs = this.physics.add.group();
-            orbs.create(config.width / 2, 200, null).setCircle(25).setData('value', 1064).fillStyle(0x00ff00, 1).fillCircleShape();
-
-            // Obstacles
-            obstacles = this.physics.add.group();
-
-            // Trail
-            trail = this.add.particles(0, 0, null, {
-                speed: 0,
-                lifespan: 500,
-                blendMode: 'ADD',
-                scale: { start: 0.2, end: 0 },
-                frequency: 50,
-                emitZone: { type: 'edge', source: new Phaser.Geom.Rectangle(-5, -5, 10, 10), quantity: 1 },
-                on: true,
-                deathZone: { type: 'onEnter', source: new Phaser.Geom.Rectangle(0, 0, 0, 0) },
-                fillStyle: 0xffffff
-            });
-            trail.startFollow(player);
-
-            // Timer
-            timerText = this.add.text(10, 10, '00:00', { font: '16px Arial', fill: '#fff' });
-
-            // UI Buttons (bottom-right corner, using rectangles)
-            this.add.rectangle(750, 550, 40, 40, 0xcccccc).setInteractive().on('pointerdown', () => {
-                console.log('Button 1 clicked');
-            });
-            this.add.rectangle(700, 550, 40, 40, 0xcccccc).setInteractive().on('pointerdown', () => {
-                console.log('Button 2 clicked');
-            });
-
-            // Controls
-            cursors = this.input.keyboard.createCursorKeys();
-
-            // Collisions
-            this.physics.add.overlap(player, orbs, collectOrb, null, this);
-            this.physics.add.overlap(player, obstacles, hitObstacle, null, this);
-
-            // Spawn timers
-            this.time.addEvent({ delay: 2000, callback: spawnOrb, callbackScope: this, loop: true });
-            this.time.addEvent({ delay: 4000, callback: spawnObstacle, callbackScope: this, loop: true });
+        if (data) {
+          const el = document.getElementById(`page${i + 1}`);
+          if (el) el.innerHTML = data.text;
         }
+      }
+    }
 
-        function update(time, delta) {
-            if (gameOver) return;
-
-            // Update timer
-            gameTime += delta / 1000;
-            const minutes = Math.floor(gameTime / 60).toString().padStart(2, '0');
-            const seconds = Math.floor(gameTime % 60).toString().padStart(2, '0');
-            timerText.setText(`${minutes}:${seconds}`);
-
-            // Player movement
-            if (cursors.left.isDown) {
-                player.setVelocityX(-200);
-                const laneWidthAtPlayerY = laneTopWidth + (laneBottomWidth - laneTopWidth) * (player.y / config.height);
-                const laneLeftAtPlayerY = (config.width - laneWidthAtPlayerY) / 2;
-                if (player.x < laneLeftAtPlayerY) player.x = laneLeftAtPlayerY;
-            } else if (cursors.right.isDown) {
-                player.setVelocityX(200);
-                const laneWidthAtPlayerY = laneTopWidth + (laneBottomWidth - laneTopWidth) * (player.y / config.height);
-                const laneRightAtPlayerY = (config.width + laneWidthAtPlayerY) / 2;
-                if (player.x > laneRightAtPlayerY) player.x = laneRightAtPlayerY;
-            } else {
-                player.setVelocityX(0);
-            }
-            if (cursors.up.isDown && player.y > 50) {
-                player.setVelocityY(-200);
-            } else if (cursors.down.isDown && player.y < config.height - 50) {
-                player.setVelocityY(200);
-            } else {
-                player.setVelocityY(0);
-            }
-
-            // Move bots
-            bots.children.entries.forEach(bot => {
-                bot.y -= scrollSpeed;
-                bot.x += Math.sin(time * 0.001 + bot.y) * 2;
-                const laneWidthAtBotY = laneTopWidth + (laneBottomWidth - laneTopWidth) * (bot.y / config.height);
-                const laneLeftAtBotY = (config.width - laneWidthAtBotY) / 2;
-                bot.x = Math.max(laneLeftAtBotY, Math.min(laneLeftAtBotY + laneWidthAtBotY, bot.x));
-                if (bot.y < -50) {
-                    bot.y = config.height + 10;
-                    bot.x = laneTopX + Math.random() * laneTopWidth;
-                }
-            });
-
-            // Move orbs and obstacles
-            orbs.children.entries.forEach(orb => {
-                orb.y += scrollSpeed;
-                if (orb.y > config.height) {
-                    orb.scoreText.destroy();
-                    orb.destroy();
-                }
-                if (!orb.scoreText) {
-                    orb.scoreText = this.add.text(orb.x - 30, orb.y + 8, orb.getData('value'), { font: 'bold 24px Arial', fill: '#fff' });
-                }
-                orb.scoreText.setPosition(orb.x - 30, orb.y + 8);
-            });
-
-            obstacles.children.entries.forEach(obstacle => {
-                obstacle.y += scrollSpeed;
-                if (obstacle.y > config.height) obstacle.destroy();
-            });
-
-            // Display scores on characters
-            bots.children.entries.forEach(bot => {
-                if (!bot.scoreText) {
-                    bot.scoreText = this.add.text(bot.x - 30, bot.y - 40, bot.getData('score'), { font: 'bold 24px Arial', fill: '#fff' });
-                }
-                bot.scoreText.setPosition(bot.x - 30, bot.y - 40);
-            });
-
-            if (!player.scoreText) {
-                player.scoreText = this.add.text(player.x - 30, player.y - 40, player.getData('score'), { font: 'bold 24px Arial', fill: '#fff' });
-            }
-            player.scoreText.setPosition(player.x - 30, player.y - 40);
+    async function savePages() {
+      for (let i = 0; i < pageTitles.length; i++) {
+        const el = document.getElementById(`page${i + 1}`);
+        if (el) {
+          const { error } = await supabase
+            .from("notes")
+            .upsert({ id: `page${i + 1}`, text: el.innerHTML, title: pageTitles[i] });
+          if (error) {
+            console.error("Save error:", error);
+            alert("Error saving page: " + error.message);
+            return;
+          }
         }
+      }
+      alert("Saved!");
+    }
 
-        function collectOrb(player, orb) {
-            player.setData('score', player.getData('score') + orb.getData('value'));
-            orb.scoreText.destroy();
-            orb.destroy();
+    async function deletePages() {
+      for (let i = 0; i < pageTitles.length; i++) {
+        const { error } = await supabase
+          .from("notes")
+          .delete()
+          .eq("id", `page${i + 1}`);
+        if (error) {
+          console.error("Delete error:", error);
+          alert("Error deleting page: " + error.message);
+          return;
         }
+      }
+      renderPages();
+    }
 
-        function hitObstacle(player, obstacle) {
-            gameOver = true;
-            this.add.text(200, 300, 'Game Over! Score: ' + player.getData('score'), { font: '40px Arial', fill: '#000' });
-            this.physics.pause();
+    function downloadPages() {
+      let text = "";
+      pageTitles.forEach((_, i) => {
+        const el = document.getElementById(`page${i + 1}`);
+        if (el) {
+          const title = el.querySelector(".title")?.innerText || "";
+          const content = el.innerText.replace(title, '').trim();
+          text += `${title}\n\n${content}\n\n\n`;
         }
+      });
+      const blob = new Blob([text], { type: 'text/plain' });
+      const a = document.createElement('a');
+      a.download = 'journal.txt';
+      a.href = URL.createObjectURL(blob);
+      a.click();
+    }
 
-        function spawnOrb() {
-            if (gameOver) return;
-            const spawnX = laneTopX + Math.random() * laneTopWidth;
-            const orb = orbs.create(spawnX, -10, null);
-            orb.setCircle(25).fillStyle(0x00ff00, 1).fillCircleShape();
-            orb.setData('value', Math.floor(Math.random() * 500) + 500);
+    async function exportToPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      pageTitles.forEach((_, i) => {
+        const el = document.getElementById(`page${i + 1}`);
+        if (el) {
+          const title = el.querySelector(".title")?.innerText || "";
+          const content = el.innerText.replace(title, '').trim();
+          if (i > 0) doc.addPage();
+          doc.setFont("Courier", "normal");
+          doc.setFontSize(12);
+          doc.text(`${title}\n\n${content}`, 10, 20, { maxWidth: 180 });
         }
+      });
+      doc.save("journal.pdf");
+    }
 
-        function spawnObstacle() {
-            if (gameOver) return;
-            const spawnX = laneTopX + Math.random() * laneTopWidth;
-            const obstacle = obstacles.create(spawnX, -10, null);
-            obstacle.setCircle(20).fillStyle(0xff0000, 1).fillCircleShape();
-        }
-    </script>
+    function toggleTheme() {
+      const isLight = document.body.classList.toggle("light");
+      localStorage.setItem("theme", isLight ? "light" : "dark");
+    }
+
+    function loadTheme() {
+      if (localStorage.getItem("theme") === "light") {
+        document.body.classList.add("light");
+      }
+    }
+
+    function nextPage() {
+      if ((currentPair + 1) * 2 < pageTitles.length) {
+        currentPair++;
+        renderPages();
+      }
+    }
+
+    function prevPage() {
+      if (currentPair > 0) {
+        currentPair--;
+        renderPages();
+      }
+    }
+
+    renderPages();
+    loadTheme();
+  </script>
 </body>
 </html>
