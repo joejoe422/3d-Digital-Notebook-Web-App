@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Phaser Lane Game</title>
+    <title>Phaser Lane Game (Local)</title>
     <style>
         body {
             margin: 0;
@@ -15,7 +15,8 @@
             background: #f0f0f0;
         }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/phaser@3.85.0/dist/phaser.min.js"></script>
+    <!-- Reference the local Phaser.js file -->
+    <script src="phaser.min.js"></script>
 </head>
 <body>
     <script>
@@ -49,12 +50,13 @@
         const scrollSpeed = 3;
 
         function preload() {
-            // Load placeholder assets (replace with actual sprite sheets and sounds)
+            // Load placeholder assets
             this.load.image('player', 'https://via.placeholder.com/40x60/00f.png?text=Player');
             this.load.image('bot', 'https://via.placeholder.com/40x60/ff8c00.png?text=Bot');
             this.load.image('orb', 'https://via.placeholder.com/50/0f0.png?text=Orb');
             this.load.image('obstacle', 'https://via.placeholder.com/40/ff0000.png?text=Obstacle');
-            this.load.audio('collect', 'https://freesound.org/data/previews/0/0_1.mp3'); // Placeholder sound
+            this.load.image('button', 'https://via.placeholder.com/40/ccc.png?text=Btn');
+            this.load.audio('collect', 'https://freesound.org/data/previews/0/0_1.mp3');
         }
 
         function create() {
@@ -95,22 +97,22 @@
             // Player
             player = this.physics.add.sprite(config.width / 2, 500, 'player');
             player.setData('score', 0);
-            player.setScale(0.8);
+            player.setScale(0.6); // Adjusted scale to better match the image proportions
             player.setCollideWorldBounds(true);
 
             // Bots
             bots = this.physics.add.group();
-            bots.create(config.width / 2 - 150, 400, 'bot').setData('score', 1000).setScale(0.8);
-            bots.create(config.width / 2 + 150, 300, 'bot').setData('score', 856).setScale(0.8);
+            bots.create(config.width / 2 - 150, 400, 'bot').setData('score', 1000).setScale(0.6);
+            bots.create(config.width / 2 + 150, 300, 'bot').setData('score', 856).setScale(0.6);
 
             // Orbs
             orbs = this.physics.add.group();
-            orbs.create(config.width / 2, 200, 'orb').setData('value', 1064).setScale(0.8);
+            orbs.create(config.width / 2, 200, 'orb').setData('value', 1064).setScale(1);
 
             // Obstacles
             obstacles = this.physics.add.group();
 
-            // Trail (using particles)
+            // Trail
             trail = this.add.particles(0, 0, 'player', {
                 speed: 0,
                 lifespan: 500,
@@ -123,6 +125,14 @@
 
             // Timer
             timerText = this.add.text(10, 10, '00:00', { font: '16px Arial', fill: '#fff' });
+
+            // UI Buttons (bottom-right corner)
+            this.add.image(750, 550, 'button').setScale(1).setInteractive().on('pointerdown', () => {
+                console.log('Button 1 clicked');
+            });
+            this.add.image(700, 550, 'button').setScale(1).setInteractive().on('pointerdown', () => {
+                console.log('Button 2 clicked');
+            });
 
             // Controls
             cursors = this.input.keyboard.createCursorKeys();
@@ -183,7 +193,10 @@
             // Move orbs and obstacles
             orbs.children.entries.forEach(orb => {
                 orb.y += scrollSpeed;
-                if (orb.y > config.height) orb.destroy();
+                if (orb.y > config.height) {
+                    orb.scoreText.destroy();
+                    orb.destroy();
+                }
                 // Display orb value
                 if (!orb.scoreText) {
                     orb.scoreText = this.add.text(orb.x - 30, orb.y + 8, orb.getData('value'), { font: 'bold 24px Arial', fill: '#fff' });
@@ -228,7 +241,7 @@
             const spawnX = laneTopX + Math.random() * laneTopWidth;
             const orb = orbs.create(spawnX, -10, 'orb');
             orb.setData('value', Math.floor(Math.random() * 500) + 500);
-            orb.setScale(0.8);
+            orb.setScale(1);
         }
 
         function spawnObstacle() {
