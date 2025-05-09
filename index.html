@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Phaser Lane Game (Local)</title>
+    <title>Phaser Lane Game (GitHub Pages)</title>
     <style>
         body {
             margin: 0;
@@ -15,8 +15,8 @@
             background: #f0f0f0;
         }
     </style>
-    <!-- Reference the local Phaser.js file -->
-    <script src="phaser.min.js"></script>
+    <!-- Use a CDN for Phaser.js -->
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.85.0/dist/phaser.min.js"></script>
 </head>
 <body>
     <script>
@@ -50,13 +50,8 @@
         const scrollSpeed = 3;
 
         function preload() {
-            // Load placeholder assets
-            this.load.image('player', 'https://via.placeholder.com/40x60/00f.png?text=Player');
-            this.load.image('bot', 'https://via.placeholder.com/40x60/ff8c00.png?text=Bot');
-            this.load.image('orb', 'https://via.placeholder.com/50/0f0.png?text=Orb');
-            this.load.image('obstacle', 'https://via.placeholder.com/40/ff0000.png?text=Obstacle');
-            this.load.image('button', 'https://via.placeholder.com/40/ccc.png?text=Btn');
-            this.load.audio('collect', 'https://freesound.org/data/previews/0/0_1.mp3');
+            // No external assets to avoid CORS issues
+            // In a real project, you'd host assets in your repository
         }
 
         function create() {
@@ -94,43 +89,44 @@
             dashedLine.lineTo(config.width / 2, config.height);
             dashedLine.strokePath();
 
-            // Player
-            player = this.physics.add.sprite(config.width / 2, 500, 'player');
+            // Player (using a rectangle instead of an image)
+            player = this.physics.add.rectangle(config.width / 2, 500, 30, 50, 0x0000ff);
             player.setData('score', 0);
-            player.setScale(0.6); // Adjusted scale to better match the image proportions
-            player.setCollideWorldBounds(true);
 
             // Bots
             bots = this.physics.add.group();
-            bots.create(config.width / 2 - 150, 400, 'bot').setData('score', 1000).setScale(0.6);
-            bots.create(config.width / 2 + 150, 300, 'bot').setData('score', 856).setScale(0.6);
+            bots.create(config.width / 2 - 150, 400, null).setSize(30, 50).setDisplaySize(30, 50).setData('score', 1000).fillStyle(0xff8c00, 1).fillRectShape();
+            bots.create(config.width / 2 + 150, 300, null).setSize(30, 50).setDisplaySize(30, 50).setData('score', 856).fillStyle(0xff8c00, 1).fillRectShape();
 
             // Orbs
             orbs = this.physics.add.group();
-            orbs.create(config.width / 2, 200, 'orb').setData('value', 1064).setScale(1);
+            orbs.create(config.width / 2, 200, null).setCircle(25).setData('value', 1064).fillStyle(0x00ff00, 1).fillCircleShape();
 
             // Obstacles
             obstacles = this.physics.add.group();
 
             // Trail
-            trail = this.add.particles(0, 0, 'player', {
+            trail = this.add.particles(0, 0, null, {
                 speed: 0,
                 lifespan: 500,
                 blendMode: 'ADD',
                 scale: { start: 0.2, end: 0 },
                 frequency: 50,
-                emitZone: { type: 'edge', source: new Phaser.Geom.Rectangle(-5, -5, 10, 10), quantity: 1 }
+                emitZone: { type: 'edge', source: new Phaser.Geom.Rectangle(-5, -5, 10, 10), quantity: 1 },
+                on: true,
+                deathZone: { type: 'onEnter', source: new Phaser.Geom.Rectangle(0, 0, 0, 0) },
+                fillStyle: 0xffffff
             });
             trail.startFollow(player);
 
             // Timer
             timerText = this.add.text(10, 10, '00:00', { font: '16px Arial', fill: '#fff' });
 
-            // UI Buttons (bottom-right corner)
-            this.add.image(750, 550, 'button').setScale(1).setInteractive().on('pointerdown', () => {
+            // UI Buttons (bottom-right corner, using rectangles)
+            this.add.rectangle(750, 550, 40, 40, 0xcccccc).setInteractive().on('pointerdown', () => {
                 console.log('Button 1 clicked');
             });
-            this.add.image(700, 550, 'button').setScale(1).setInteractive().on('pointerdown', () => {
+            this.add.rectangle(700, 550, 40, 40, 0xcccccc).setInteractive().on('pointerdown', () => {
                 console.log('Button 2 clicked');
             });
 
@@ -197,7 +193,6 @@
                     orb.scoreText.destroy();
                     orb.destroy();
                 }
-                // Display orb value
                 if (!orb.scoreText) {
                     orb.scoreText = this.add.text(orb.x - 30, orb.y + 8, orb.getData('value'), { font: 'bold 24px Arial', fill: '#fff' });
                 }
@@ -227,7 +222,6 @@
             player.setData('score', player.getData('score') + orb.getData('value'));
             orb.scoreText.destroy();
             orb.destroy();
-            this.sound.play('collect');
         }
 
         function hitObstacle(player, obstacle) {
@@ -239,15 +233,16 @@
         function spawnOrb() {
             if (gameOver) return;
             const spawnX = laneTopX + Math.random() * laneTopWidth;
-            const orb = orbs.create(spawnX, -10, 'orb');
+            const orb = orbs.create(spawnX, -10, null);
+            orb.setCircle(25).fillStyle(0x00ff00, 1).fillCircleShape();
             orb.setData('value', Math.floor(Math.random() * 500) + 500);
-            orb.setScale(1);
         }
 
         function spawnObstacle() {
             if (gameOver) return;
             const spawnX = laneTopX + Math.random() * laneTopWidth;
-            obstacles.create(spawnX, -10, 'obstacle').setScale(0.8);
+            const obstacle = obstacles.create(spawnX, -10, null);
+            obstacle.setCircle(20).fillStyle(0xff0000, 1).fillCircleShape();
         }
     </script>
 </body>
