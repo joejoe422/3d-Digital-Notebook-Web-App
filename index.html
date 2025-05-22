@@ -1,4 +1,3 @@
-<!-- Start of your glorious, Supabase-enhanced script -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,7 +7,128 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.38.5/dist/umd/supabase.min.js"></script>
   <style>
-    /* ...your existing style remains untouched because, perfection. */
+    :root {
+      --bg: #1a1a1a;
+      --page-bg: #1c1c1c;
+      --text: #fffde7;
+      --title: #fff;
+      --border: #222;
+      --button: #444;
+      --button-hover: #666;
+    }
+
+    body.light {
+      --bg: #fafafa;
+      --page-bg: #fff;
+      --text: #111;
+      --title: #333;
+      --border: #ccc;
+      --button: #ddd;
+      --button-hover: #bbb;
+    }
+
+    body {
+      margin: 0;
+      padding: 60px;
+      background-color: var(--bg);
+      font-family: 'Courier New', Courier, monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      color: var(--text);
+      perspective: 1200px;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    .page {
+      width: 90%;
+      max-width: 1000px;
+      box-sizing: border-box;
+      padding: 40px;
+      background-color: var(--page-bg);
+      border-radius: 8px;
+      position: relative;
+      white-space: pre-wrap;
+      overflow-wrap: break-word;
+      font-size: 16px;
+      line-height: 1.8;
+      min-height: 600px;
+      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
+      transform: rotateX(10deg) rotateY(15deg) scale(0.96);
+      transform-style: preserve-3d;
+      transition: transform 0.4s ease;
+    }
+
+    .page::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 100%;
+      background-image: repeating-linear-gradient(
+        to bottom,
+        transparent,
+        transparent 27px,
+        rgba(255,255,255,0.05) 27px,
+        rgba(255,255,255,0.05) 28px
+      );
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .content {
+      position: relative;
+      z-index: 1;
+      outline: none;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 30px 0;
+    }
+
+    button {
+      background-color: var(--button);
+      color: var(--text);
+      border: none;
+      padding: 10px 20px;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 14px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background-color: var(--button-hover);
+    }
+
+    #saved-notes {
+      width: 100%;
+      max-width: 1000px;
+      margin-top: 20px;
+      padding: 20px;
+      background: var(--page-bg);
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    }
+
+    #saved-notes h2 {
+      margin-top: 0;
+      color: var(--title);
+      font-size: 20px;
+    }
+
+    #notes-list {
+      white-space: pre-wrap;
+      line-height: 1.6;
+      color: var(--text);
+      font-size: 14px;
+    }
   </style>
 </head>
 <body>
@@ -33,7 +153,12 @@
   </div>
 
   <script>
-    // IndexedDB setup
+    // Supabase Setup
+    const SUPABASE_URL = 'https://pbclnujukutrpmirljjk.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBiY2xudWp1a3V0cnBtaXJsamprIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU2MTE3NzIsImV4cCI6MjA2MTE4Nzc3Mn0.ZLaVbsKFdfYv2vZFEyrURjSILE3F890Skmtd3HmB-BA';
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // IndexedDB Setup
     let db;
     const request = indexedDB.open("SingleNotebookDB", 1);
     request.onupgradeneeded = e => {
@@ -45,23 +170,18 @@
       db = e.target.result;
       loadJournal();
       loadTheme();
-      loadSupabaseNotes(); // Fetch Supabase notes on load
+      loadSupabaseNotes();
     };
-
-    // Supabase config
-    const SUPABASE_URL = 'https://pbclnujukutrpmirljjk.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBiY2xudWp1a3V0cnBtaXJsamprIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU2MTE3NzIsImV4cCI6MjA2MTE4Nzc3Mn0.ZLaVbsKFdfYv2vZFEyrURjSILE3F890Skmtd3HmB-BA';
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     async function saveJournal() {
       const html = document.getElementById("journalContent").innerHTML;
-      
-      // Save to IndexedDB
+
+      // IndexedDB save
       const tx = db.transaction(["journal"], "readwrite");
       tx.objectStore("journal").put({ id: "main", html });
       alert("Saved locally!");
 
-      // Save to Supabase
+      // Supabase save
       try {
         const { error } = await supabase
           .from('notes')
@@ -97,6 +217,12 @@
       req.onsuccess = e => {
         if (e.target.result) {
           document.getElementById("journalContent").innerHTML = e.target.result.html;
+          renderSavedNote(e.target.result.html);
+          
+          // 👇 restore 3D after DOM update
+          requestAnimationFrame(() => {
+            document.querySelector('.page').style.transform = 'rotateX(10deg) rotateY(15deg) scale(0.96)';
+          });
         }
       };
     }
@@ -106,6 +232,10 @@
       tx.objectStore("journal").delete("main");
       document.getElementById("journalContent").innerHTML = '<div class="title">My Journal</div>';
       document.getElementById("notes-list").innerHTML = '';
+
+      requestAnimationFrame(() => {
+        document.querySelector('.page').style.transform = 'rotateX(10deg) rotateY(15deg) scale(0.96)';
+      });
     }
 
     function downloadJournal() {
